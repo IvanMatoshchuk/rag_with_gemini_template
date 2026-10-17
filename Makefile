@@ -1,4 +1,12 @@
-.PHONY: run-frontend-local run-backend-local run-local
+.PHONY: run-frontend-local run-backend-local run-local test lint check
+
+test:
+	cd backend && uv run pytest
+
+lint:
+	cd backend && uv run ruff check --fix .
+
+check: test lint
 
 run-backend-local:
 	cd backend && uv run main

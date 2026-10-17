@@ -1,3 +1,5 @@
+import asyncio
+
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -30,6 +32,14 @@ class UploadedFile(BaseModel):
 class UploadResult(BaseModel):
     uploaded: list[UploadedFile]
 
+
+async def _ingest_upload(file: UploadFile) -> tuple[str, int, str]:
+    name = file.filename or "upload.txt"
+    content_type = file.content_type or "text/plain"
+    data = await file.read()
+    return await agent.ingest_file(name, content_type, data)
+
+
 # Exception handlers
 @app.exception_handler(HTTPException)
 async def http_error(_request: Request, exc: HTTPException) -> PlainTextResponse:
@@ -46,26 +56,20 @@ async def validation_error(_request: Request, exc: RequestValidationError) -> Pl
 async def unexpected_error(_request: Request, exc: Exception) -> PlainTextResponse:
     return PlainTextResponse(str(exc), status_code=500)
 
+
 # API endpoints
 @app.post("/api/sources")
-def upload_sources(files: list[UploadFile] = File(...)) -> UploadResult:
-    uploaded: list[UploadedFile] = []
-    for file in files:
-        data = file.file.read()
-        try:
-            name, size, content_type = agent.ingest_file(
-                file.filename or "upload.txt",
-                file.content_type or "text/plain",
-                data,
-            )
-        except IngestError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        uploaded.append(UploadedFile(name=name, size=size, type=content_type))
+async def upload_sources(files: list[UploadFile] = File(...)) -> UploadResult:
+    try:
+        ingested = await asyncio.gather(*(_ingest_upload(file) for file in files))
+    except IngestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    uploaded = [UploadedFile(name=name, size=size, type=content_type) for name, size, content_type in ingested]
     return UploadResult(uploaded=uploaded)
 
 
 @app.post("/api/research")
-def research(body: ResearchRequest) -> StreamingResponse:
+async def research(body: ResearchRequest) -> StreamingResponse:
     question = body.request.strip()
     if not question:
         raise HTTPException(status_code=400, detail="request is empty")

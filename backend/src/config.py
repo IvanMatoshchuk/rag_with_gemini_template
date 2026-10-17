@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     chunk_overlap: float = Field(default=0.15, ge=0.0, lt=0.9)
     data_dir: Path = Path("data")
     top_k: int = Field(default=5, ge=1, le=100)
+    google_search_enabled: bool = True
 
 
 settings = Settings()
