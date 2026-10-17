@@ -1,0 +1,49 @@
+[project]
+name = "research-assistant-backend"
+version = "0.1.0"
+description = "Research assistant backend"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0,<9.0.0",
+    "mypy>=1.11.0,<2.0.0",
+    "ruff>=0.6.0,<1.0.0",
+    "coverage>=7.4.0,<8.0.0",
+]
+
+[project.scripts]
+main = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+[tool.mypy]
+strict = true
+exclude = ["venv", ".venv"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 119
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG001"]
+ignore = ["B008", "B904"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
