@@ -1,4 +1,4 @@
-.PHONY: run-frontend-local run-backend-local run-local test lint check
+.PHONY: run run-frontend-local run-backend-local run-local stop test lint check
 
 test:
 	cd backend && uv run pytest
@@ -16,3 +16,9 @@ run-frontend-local:
 
 run-local:
 	$(MAKE) -j2 run-backend-local run-frontend-local
+
+run:
+	docker compose up
+
+stop:
+	docker compose down
