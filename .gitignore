@@ -34,3 +34,8 @@ __pycache__/
 .pytest_cache/
 venv/
 .venv/
+.mypy_cache/
+.ruff_cache/
+
+# local uploads, sqlite, and chroma
+data/
