@@ -1,5 +1,7 @@
 # Research assistant backend
 
+Project-wide setup, architecture, examples, and evaluation: [../README.md](../README.md).
+
 FastAPI-based backend for the research-agent UI. It stores uploaded texts (pdfs not suppported yet), chunks and embeds them, and streams a markdown answer that can search those chunks.
 
 ## Setup
