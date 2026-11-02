@@ -1,5 +1,7 @@
 import asyncio
+import logging
 
+import magic
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -8,12 +10,13 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from agent import agent
+from config import settings
 from vector_store import IngestError
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[i.strip() for i in settings.allowed_origins.split(",")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -34,7 +37,29 @@ class UploadResult(BaseModel):
 
 
 async def _ingest_upload(file: UploadFile) -> tuple[str, int, str]:
+    # logging.info(file)
+    # logging.info(file.__dict__)
+    # logging.info("\n\n")
+
+    try:
+        magic_from_file = magic.from_file(file.file)
+        logging.info("MAGIG_FROM_FILE -->", magic_from_file)
+    except Exception as e:
+        logging.error(e)
+
+    first_bytes = await file.read(size=2048)
+    magic_from_bytes = magic.from_buffer(first_bytes, mime=True)[0]
+    file_type = magic_from_bytes.spit("/")[1]
+    # Arguments: ('HTML document, Unicode text, UTF-8 text',)
+    # [i.lower() for i in magic_from_bytes.spit(" ")]
+    logging.info("magic_from_bytes -->", magic_from_bytes)
+    logging.info("\n\n")
+
     name = file.filename or "upload.txt"
+    file_type = name.split(".")[-1]
+    allowed_file_types = [i.strip() for i in settings.allowed_file_types.split(",")]
+    if file_type not in allowed_file_types:
+        raise Exception(f"Wrong type! Expected: {allowed_file_types} , received: {file_type}")
     content_type = file.content_type or "text/plain"
     data = await file.read()
     return await agent.ingest_file(name, content_type, data)
@@ -77,6 +102,8 @@ async def research(body: ResearchRequest) -> StreamingResponse:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+
     uvicorn.run("main:app", host="0.0.0.0", port=8787)
 
 

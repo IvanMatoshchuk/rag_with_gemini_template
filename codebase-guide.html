@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Research assistant — codebase guide</title>
+  <style>
+    :root {
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #e4ddd2;
+      --paper: #f7f3ec;
+      --card: #fffdf8;
+      --rail: #221e1a;
+      --rail-text: #efe8dc;
+      --rail-dim: #b7ad9f;
+      --accent: #9a3b12;
+      --accent-soft: #f4e4d8;
+      --ok: #1f6b45;
+      --ok-soft: #e5f3eb;
+      --warn: #8a5a12;
+      --warn-soft: #f8efd8;
+      --code: #2a241e;
+      --code-bg: #f3eee6;
+      --mono: "SFMono-Regular", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+      --sans: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      --serif: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); }
+    a:hover { text-decoration-thickness: 2px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      background: var(--rail);
+      color: var(--rail-text);
+      padding: 28px 22px 40px;
+    }
+    nav .mark {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      line-height: 1.15;
+      margin: 0 0 6px;
+    }
+    nav .sub {
+      margin: 0 0 22px;
+      color: var(--rail-dim);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    nav ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    nav li { margin: 0; }
+    nav a {
+      display: block;
+      color: var(--rail-text);
+      text-decoration: none;
+      padding: 7px 0;
+      font-size: 0.92rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    nav a span {
+      color: var(--rail-dim);
+      font-variant-numeric: tabular-nums;
+      margin-right: 8px;
+      font-size: 0.78rem;
+    }
+    nav a:hover { color: #fff; }
+
+    main {
+      padding: 48px 56px 96px;
+      max-width: 980px;
+    }
+
+    header.hero h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(2.4rem, 4vw, 3.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin: 0 0 16px;
+    }
+    .lede {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 42rem;
+      margin: 0 0 18px;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 18px 0 8px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 2rem;
+      margin: 2.6rem 0 0.7rem;
+      letter-spacing: -0.02em;
+      scroll-margin-top: 18px;
+    }
+    h3 {
+      font-size: 1.15rem;
+      margin: 1.6rem 0 0.4rem;
+    }
+    p { margin: 0.7rem 0; }
+    ul, ol { margin: 0.5rem 0 0.8rem; padding-left: 1.2rem; }
+    li { margin: 0.28rem 0; }
+
+    code, .ref {
+      font-family: var(--mono);
+      font-size: 0.84em;
+      background: var(--code-bg);
+      padding: 0.08em 0.35em;
+      border-radius: 4px;
+    }
+    .ref { white-space: nowrap; }
+
+    pre {
+      background: var(--code);
+      color: #f4efe6;
+      padding: 14px 16px;
+      border-radius: 10px;
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+      font-size: 0.95rem;
+      background: var(--card);
+    }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+    th {
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 12px 14px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+    .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+    .callout strong { display: block; margin-bottom: 2px; }
+
+    .flow {
+      display: grid;
+      gap: 0;
+      margin: 16px 0 8px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+    }
+    .step .n {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--rail);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 650;
+      position: relative;
+    }
+    .step:not(:last-child) .n::after {
+      content: "";
+      position: absolute;
+      top: 42px;
+      left: 20px;
+      width: 2px;
+      height: calc(100% - 10px);
+      background: #d9d0c4;
+    }
+    .step .body { padding-bottom: 18px; }
+    .step h3 { margin: 6px 0 4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .card h3 { margin-top: 0; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .tag.high { background: #f8d7cc; color: #7a2610; }
+    .tag.med { background: var(--warn-soft); color: #6d470c; }
+    .tag.low { background: #ece7df; color: #4d463e; }
+    .tag.new { background: #dceaf8; color: #1a3f6e; }
+
+    footer {
+      margin-top: 48px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; }
+      main { padding: 28px 18px 64px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    @media print {
+      nav { display: none; }
+      .layout { display: block; }
+      main { max-width: none; padding: 0; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav>
+      <p class="mark">Research assistant</p>
+      <p class="sub">Codebase guide</p>
+      <ol>
+        <li><a href="#overview"><span>01</span>What it is</a></li>
+        <li><a href="#map"><span>02</span>Repository map</a></li>
+        <li><a href="#runtime"><span>03</span>Runtime and config</a></li>
+        <li><a href="#workflows"><span>04</span>Workflows</a></li>
+        <li><a href="#ingestion"><span>05</span>Ingestion</a></li>
+        <li><a href="#retrieval"><span>06</span>Retrieval</a></li>
+        <li><a href="#agent"><span>07</span>Agent loop</a></li>
+        <li><a href="#storage"><span>08</span>Persistence</a></li>
+        <li><a href="#api"><span>09</span>HTTP API and errors</a></li>
+        <li><a href="#frontend"><span>10</span>Frontend</a></li>
+        <li><a href="#tests"><span>11</span>Tests</a></li>
+        <li><a href="#improvements"><span>12</span>Improvements</a></li>
+        <li><a href="#next"><span>13</span>Still to implement</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <h1>How this codebase works</h1>
+        <p class="lede">
+          A full-stack research assistant. You upload plain-text sources, the backend chunks and embeds them,
+          and a Gemini agent answers questions in a streamed markdown response grounded in those files and,
+          optionally, Google Search.
+        </p>
+        <div class="meta">
+          <span class="pill">FastAPI + uvicorn · port 8787</span>
+          <span class="pill">React 19 + Vite · port 5173</span>
+          <span class="pill">SQLite + Chroma + Gemini embeddings</span>
+          <span class="pill">Python 3.12 · Node 22</span>
+        </div>
+      </header>
+
+      <section id="overview">
+        <h2>01 — What it is</h2>
+        <p>
+          The product has two user actions and nothing else: upload files, then ask a question.
+          There is no login, no conversation history, no document list, and no rendered markdown.
+          The answer is streamed as raw text into a <code>&lt;pre&gt;</code>.
+        </p>
+        <p>
+          The interesting part is the backend agent. Gemini is not allowed to call tools by itself
+          (<span class="ref">backend/src/agent.py:140</span>). The app streams tokens as they arrive,
+          and when the model emits <code>search_documents</code>, the app embeds the query, reads Chroma,
+          and feeds the chunks back for another turn. Google Search, when enabled, stays a server-side Gemini tool.
+          Its links are collected from grounding metadata and appended as a footer.
+        </p>
+        <div class="callout">
+          <strong>Design choice worth remembering</strong>
+          Embeddings are computed by Gemini and stored as raw vectors. Chroma is only the index
+          (<span class="ref">backend/src/vector_store.py:18-23</span>). The collection is created with
+          <code>embedding_function=None</code> and cosine space, so retrieval quality depends entirely on
+          the embedding model and on using <code>RETRIEVAL_DOCUMENT</code> at ingest time and
+          <code>RETRIEVAL_QUERY</code> at search time.
+        </div>
+      </section>
+
+      <section id="map">
+        <h2>02 — Repository map</h2>
+        <table>
+          <thead>
+            <tr><th>Path</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>backend/src/main.py</code></td>
+              <td>FastAPI app, CORS, two routes, plain-text error handlers, uvicorn entrypoint.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/agent.py</code></td>
+              <td>Singleton <code>ResearchAgent</code>: prompts, embeddings, ingest, search, multi-turn stream.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/chunks.py</code></td>
+              <td>Word-window chunking with overlap. Returns <code>Chunk(text, chunk_index, word_start)</code>.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/vector_store.py</code></td>
+              <td>Chroma collection, original-file storage, upsert, vector search, UTF-8 decode, filename sanitizing.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/db.py</code></td>
+              <td>SQLite document registry: <code>processing</code> → <code>ready</code> or <code>failed</code>.</td>
+            </tr>
+            <tr>
+              <td><code>backend/src/config.py</code></td>
+              <td>Pydantic settings from the repo-root <code>.env</code>. Fails import if the API key is missing.</td>
+            </tr>
+            <tr>
+              <td><code>backend/tests/</code></td>
+              <td>Chunking, tool wiring, ingest+search with a fake embedder, embed batching, parallel uploads.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/src/App.tsx</code></td>
+              <td>Upload form, research form, abort, streamed output.</td>
+            </tr>
+            <tr>
+              <td><code>frontend/src/api.ts</code></td>
+              <td><code>fetch</code> wrappers for <code>POST /api/sources</code> and the research stream.</td>
+            </tr>
+            <tr>
+              <td><code>compose.yml</code>, <code>Makefile</code>, Dockerfiles</td>
+              <td>Local dual-process run and Docker Compose. Data volume is <code>./data</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Hatch builds the backend so <code>src/</code> lands at the top of the package
+          (<span class="ref">backend/pyproject.toml:32-37</span>). Imports are therefore
+          <code>from agent import agent</code>, not <code>from src.agent</code>.
+          The console script is <code>main = "main:main"</code>, which is what the backend container runs.
+        </p>
+        <p>
+          <code>docling</code> is declared in <span class="ref">backend/pyproject.toml:8</span> and is never imported.
+          Uploads are UTF-8 text only.
+        </p>
+      </section>
+
+      <section id="runtime">
+        <h2>03 — Runtime and configuration</h2>
+        <p>
+          Settings load once, at import, from <code>REPO_ROOT / ".env"</code>
+          (<span class="ref">backend/src/config.py:6-22</span>). <code>REPO_ROOT</code> is two parents above
+          <code>config.py</code>, so the backend refuses a <code>backend/.env</code>. A relative
+          <code>DATA_DIR</code> is rewritten to an absolute path under the repo
+          (<span class="ref">backend/src/config.py:25-26</span>). Docker overrides this with
+          <code>DATA_DIR=/data</code> and mounts <code>./data:/data</code> (<span class="ref">compose.yml:6-11</span>).
+        </p>
+        <table>
+          <thead>
+            <tr><th>Variable</th><th>Default</th><th>Effect</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>GEMINI_API_KEY</code></td><td>empty → crash</td><td>Required at import of <code>config.py</code> and again in <code>ResearchAgent.__init__</code>.</td></tr>
+            <tr><td><code>GEMINI_MODEL</code></td><td><code>gemini-3.5-flash-lite</code></td><td>Generation model in <code>generate_content_stream</code>.</td></tr>
+            <tr><td><code>GEMINI_EMBEDDING_MODEL</code></td><td><code>gemini-embedding-2</code></td><td>Both document and query embeddings.</td></tr>
+            <tr><td><code>CHUNK_WORDS</code></td><td>500 (1–5000)</td><td>Words per chunk.</td></tr>
+            <tr><td><code>CHUNK_OVERLAP</code></td><td>0.15 (0–0.9)</td><td>Fraction of the window reused as overlap.</td></tr>
+            <tr><td><code>TOP_K</code></td><td>5 (1–100)</td><td>Chunks returned to the model per search.</td></tr>
+            <tr><td><code>GOOGLE_SEARCH_ENABLED</code></td><td>true</td><td>Adds the built-in Google Search tool and the web-citation prompt.</td></tr>
+            <tr><td><code>DATA_DIR</code></td><td><code>data</code></td><td>Uploads, <code>research.sqlite</code>, Chroma directory.</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Two constants live in code, not in the environment: <code>MAX_TURNS = 5</code>,
+          <code>EMBED_BATCH = 100</code>, <code>EMBED_WORKERS = 4</code>
+          (<span class="ref">backend/src/agent.py:13-15</span>).
+        </p>
+        <h3>How processes start</h3>
+        <ul>
+          <li><code>make run-local</code> starts backend and Vite in parallel (<span class="ref">Makefile:17-18</span>).</li>
+          <li>Backend: <code>uv run main</code> → <code>uvicorn.run("main:app", host="0.0.0.0", port=8787)</code> (<span class="ref">backend/src/main.py:79-80</span>). One process, no worker count, no reload flag.</li>
+          <li>Frontend dev server defaults to Vite’s port 5173. CORS allows only <code>http://localhost:5173</code> (<span class="ref">backend/src/main.py:14-19</span>).</li>
+          <li>Docker frontend is also the Vite dev server, with <code>VITE_API_BASE_URL=http://localhost:8787</code> so the browser on the host calls the published backend port (<span class="ref">compose.yml:24-28</span>).</li>
+        </ul>
+        <div class="callout warn">
+          <strong>Import-time side effects</strong>
+          Importing the app opens Chroma (<span class="ref">vector_store.py:27</span>), constructs
+          <code>ResearchAgent</code> (<span class="ref">agent.py:211</span>), and refuses to start without
+          <code>GEMINI_API_KEY</code>. Tests set the key and a temp <code>DATA_DIR</code> in
+          <span class="ref">backend/tests/conftest.py:4-6</span> before those modules load. There is no lifespan hook
+          and no health route.
+        </div>
+      </section>
+
+      <section id="workflows">
+        <h2>04 — Workflows</h2>
+        <p>
+          Both flows are request-scoped. Nothing is remembered between research calls except the files
+          already written to SQLite, disk, and Chroma.
+        </p>
+
+        <h3>Upload</h3>
+        <div class="flow">
+          <div class="step">
+            <div class="n">1</div>
+            <div class="body">
+              <h3>Browser builds multipart form</h3>
+              <p>
+                <span class="ref">frontend/src/App.tsx:79-92</span> submits the selected <code>FileList</code>.
+                <span class="ref">frontend/src/api.ts:48-61</span> appends every file under the field name <code>files</code>.
+                The file input only accepts <code>text/*</code> (<span class="ref">App.tsx:119</span>).
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">2</div>
+            <div class="body">
+              <h3>Route fans out with asyncio.gather</h3>
+              <p>
+                <code>POST /api/sources</code> (<span class="ref">main.py:61-68</span>) reads each upload and calls
+                <code>agent.ingest_file</code> concurrently. One <code>IngestError</code> becomes HTTP 400.
+                Other exceptions become HTTP 500 through the catch-all handler.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">3</div>
+            <div class="body">
+              <h3>Each file is registered, chunked, embedded, indexed</h3>
+              <p>
+                See section 05. On success the row is <code>ready</code>. The HTTP body is only
+                <code>{ uploaded: [{ name, size, type }] }</code> — not ids, not chunk counts, not status.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h3>Research</h3>
+        <div class="flow">
+          <div class="step">
+            <div class="n">1</div>
+            <div class="body">
+              <h3>Browser posts JSON and reads the body as a stream</h3>
+              <p>
+                <span class="ref">App.tsx:24-45</span> clears the previous answer, creates an <code>AbortController</code>,
+                and appends each decoded chunk with a functional <code>setMarkdown</code>.
+                <span class="ref">api.ts:8-41</span> uses <code>response.body.getReader()</code> and a <code>TextDecoder</code>.
+                This is not SSE. It is a plain <code>text/plain</code> body.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">2</div>
+            <div class="body">
+              <h3>Route validates and returns StreamingResponse</h3>
+              <p>
+                Empty or whitespace-only questions are HTTP 400 (<span class="ref">main.py:71-76</span>).
+                Otherwise the response media type is <code>text/plain</code> and the body is
+                <code>agent.stream_research</code>.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">3</div>
+            <div class="body">
+              <h3>Up to five model turns</h3>
+              <p>
+                Each turn streams text to the client. A <code>search_documents</code> call pauses the answer,
+                runs retrieval, and starts another turn with the tool result appended. Web links are appended
+                only on a turn that does not also call the document tool. Details are in section 07.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="n">4</div>
+            <div class="body">
+              <h3>Failures after the stream has started are text, not status codes</h3>
+              <p>
+                <span class="ref">agent.py:127-132</span> catches any exception inside the generator and yields
+                <code>\n\nResearch failed: …</code>. The HTTP status is already 200, so the UI shows that sentence
+                in the same panel as the answer. Errors before the stream starts (validation, empty question)
+                surface as <code>researchError</code> because <code>response.ok</code> is false.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="ingestion">
+        <h2>05 — Ingestion</h2>
+        <p><code>ResearchAgent.ingest_file</code> (<span class="ref">agent.py:97-118</span>) is the whole pipeline:</p>
+        <ol>
+          <li>Sanitize the filename with <code>Path(filename).name</code>. <code>.</code>, <code>..</code>, and empty names become <code>upload.txt</code> (<span class="ref">vector_store.py:78-82</span>). This blocks path traversal. It does not make names unique.</li>
+          <li>Allocate <code>uuid.uuid4().hex</code> and insert a SQLite row with status <code>processing</code> (<span class="ref">db.py:38-47</span>).</li>
+          <li>Decode bytes as UTF-8. Any <code>UnicodeDecodeError</code> becomes <code>IngestError("file is not valid UTF-8 text")</code> (<span class="ref">vector_store.py:71-75</span>).</li>
+          <li>Split on whitespace into overlapping word windows (<span class="ref">chunks.py:10-26</span>). Blank input returns no chunks and the file fails with <code>"{name} has no text"</code>.</li>
+          <li>Write the original bytes to <code>data/uploads/{doc_id}/{filename}</code> (<span class="ref">vector_store.py:29-32</span>). This happens only after decode and chunking succeed, so a bad file leaves a failed row and no bytes.</li>
+          <li>Embed every chunk with task type <code>RETRIEVAL_DOCUMENT</code>.</li>
+          <li>Upsert into the <code>sources</code> collection. Ids are <code>{doc_id}:{chunk_index}</code>. Metadata is <code>doc_id</code>, <code>filename</code>, <code>chunk_index</code>, <code>word_start</code> (<span class="ref">vector_store.py:35-51</span>).</li>
+          <li>Mark the row <code>ready</code>. On <code>IngestError</code> or any other exception, mark <code>failed</code> with <code>str(exc)</code> and re-raise.</li>
+        </ol>
+        <p>
+          There is an explicit unfinished hook: <span class="ref">agent.py:98</span> says
+          “Use hashing to check whether uploaded data already exists.” <code>db.py</code> still contains a
+          migration that <em>drops</em> a <code>content_hash</code> column if it is present
+          (<span class="ref">db.py:23-34</span>). Dedup was started and then removed. Re-uploading the same file
+          always creates a new document id and a second set of chunks.
+        </p>
+
+        <h3>Chunking math</h3>
+        <p>
+          Words are <code>text.split()</code> — any whitespace, no sentence or paragraph boundaries.
+          Step size is <code>max(int(chunk_words * (1 - overlap)), 1)</code>. With the defaults,
+          500 words and 0.15 overlap, the step is 425 words, so neighboring chunks share 75 words.
+          The loop stops once a window reaches the end, so the tail is not padded.
+          The unit test (<span class="ref">backend/tests/test_core.py:7-13</span>) locks this in:
+          40 words, window 20, overlap 0.15 → starts at 0, 17, 34.
+        </p>
+
+        <h3>Embedding parallelism</h3>
+        <p>
+          <span class="ref">agent.py:71-83</span> slices texts into batches of 100 and schedules every batch with
+          <code>asyncio.gather</code>. A semaphore of 4 (<code>_embed_slots</code>) caps in-flight Gemini calls.
+          Results are flattened in batch order, so chunk <em>i</em> stays aligned with vector <em>i</em>.
+          <code>_read_embeddings</code> (<span class="ref">agent.py:85-95</span>) rejects a short response or an empty vector.
+          The same path embeds a one-item query. The concurrency test
+          (<span class="ref">test_core.py:49-72</span>) uses two batches and asserts they overlap in time and keep order.
+        </p>
+
+        <h3>Multi-file uploads</h3>
+        <p>
+          <span class="ref">main.py:64</span> gathers one <code>ingest_file</code> per file. The route test
+          (<span class="ref">test_core.py:75-106</span>) stubs ingest with a short sleep and asserts both run at once.
+          <code>asyncio.gather</code> is called without <code>return_exceptions=True</code>. If one file raises,
+          that exception is propagated immediately and the other uploads are not cancelled. A sibling file can
+          finish, land in Chroma, and be searchable even though the HTTP response is an error and never lists it.
+        </p>
+      </section>
+
+      <section id="retrieval">
+        <h2>06 — Retrieval</h2>
+        <p>
+          <code>search_documents</code> (<span class="ref">agent.py:120-125</span>) strips the query, embeds it as
+          <code>RETRIEVAL_QUERY</code>, and calls <code>search_chunks_by_vector</code> with <code>settings.top_k</code>.
+          An empty query returns the string <code>"No query was provided."</code> and does not hit the index.
+        </p>
+        <p>
+          <span class="ref">vector_store.py:54-68</span> queries Chroma with a single vector and formats each hit as:
+        </p>
+        <pre><code>[filename chunk 0]
+chunk text here</code></pre>
+        <p>
+          Hits are joined with a blank line. No distances are read, even though Chroma returns them.
+          There is no score cutoff, no filter on <code>doc_id</code> or filename, and no join back to SQLite,
+          so a chunk is searchable as soon as <code>add_chunks</code> returns — status <code>ready</code> is not consulted.
+          <code>zip(..., strict=False)</code> silently drops extras if the document and metadata lists ever differ in length.
+        </p>
+        <div class="callout">
+          <strong>Citation format does not match the tool output</strong>
+          The system prompt demands <code>[filename:chunk_index]</code> (<span class="ref">agent.py:24-25</span>).
+          The tool returns <code>[filename chunk N]</code>. The model has to translate. Nothing in the backend
+          checks that a citation refers to a real chunk or that the claimed fact is in that text.
+        </div>
+      </section>
+
+      <section id="agent">
+        <h2>07 — Agent loop</h2>
+        <p>The prompt is two string constants concatenated at request time (<span class="ref">agent.py:17-31</span> and <span class="ref">agent.py:136</span>):</p>
+        <ul>
+          <li>Always search uploaded sources before answering. If nothing relevant was uploaded, say so.</li>
+          <li>Do not invent sources. Write markdown. Cite every upload as <code>[filename:chunk_index]</code>.</li>
+          <li>If Google Search is on, use it for facts that are not in the files, and cite pages as <code>[title](url)</code>.</li>
+        </ul>
+        <p>
+          Those first two bullets and the web bullet pull in different directions. “If nothing was uploaded, say so”
+          can make the model refuse a question that Google Search could answer. The web addendum is simply appended,
+          with no priority between corpus and web.
+        </p>
+
+        <h3>Tools</h3>
+        <p>
+          <code>tools()</code> (<span class="ref">agent.py:60-64</span>) always includes <code>search_documents</code>
+          (<span class="ref">agent.py:33-50</span>), a single required string argument <code>query</code>.
+          When <code>google_search_enabled</code> is true it also appends <code>types.Tool(google_search=...)</code>
+          and a <code>ToolConfig</code> with <code>include_server_side_tool_invocations=True</code>
+          (<span class="ref">agent.py:66-69</span>). Automatic function calling is disabled
+          (<span class="ref">agent.py:140</span>) so document search stays in this process, where the app can
+          interleave it with token streaming. Google Search still executes inside Gemini; the app only reads
+          <code>candidate.grounding_metadata</code>.
+        </p>
+
+        <h3>One turn, then maybe another</h3>
+        <p><code>_answer</code> (<span class="ref">agent.py:134-182</span>) keeps a <code>contents</code> list that starts as a single user message. For each of at most five turns:</p>
+        <ol>
+          <li>Open <code>generate_content_stream</code>.</li>
+          <li>For every chunk, take <code>candidates[0]</code>. Skip the chunk if there is no candidate.</li>
+          <li>Collect web sources from grounding metadata into a list local to this turn (<span class="ref">agent.py:190-200</span>). Dedup is string equality of the markdown line.</li>
+          <li>Walk parts. Keep every part. If it is a finished <code>search_documents</code> call (<code>will_continue</code> is false), record it. If it is non-thought text, yield it immediately. Thought parts are stored for the history but not streamed (<span class="ref">agent.py:167</span>).</li>
+          <li>If there were no document-search calls: optionally yield a <code>**Web sources**</code> footer, and if the model wrote nothing, yield a fixed “couldn’t find an answer” sentence. Then return.</li>
+          <li>If there were calls: append the model turn, run each call through <code>_tool_result</code> (sequentially, in a list comprehension of awaits — not gathered), append those responses as a user turn, and loop.</li>
+        </ol>
+        <p>
+          After five turns that all requested another search, the client receives
+          <code>I couldn't finish that research request.</code> (<span class="ref">agent.py:182</span>).
+          Any text already streamed on earlier turns stays on screen.
+        </p>
+        <div class="callout warn">
+          <strong>Web sources are dropped when the same turn also searches documents</strong>
+          <code>web_sources</code> is created inside the turn loop (<span class="ref">agent.py:147</span>).
+          The footer is yielded only in the <code>if not calls</code> branch (<span class="ref">agent.py:171-176</span>).
+          If the model calls <code>search_documents</code> on a turn that also grounded with Google, those links
+          are discarded before the next turn. Later turns start a fresh list and only see grounding from that later turn.
+        </div>
+        <p>
+          <code>_query</code> (<span class="ref">agent.py:202-208</span>) reads <code>call.args["query"]</code> and
+          ignores anything that is not a string. <code>_tool_result</code> always responds with the name
+          <code>search_documents</code> (<span class="ref">agent.py:184-188</span>). The function-call id is not copied
+          onto the response part. That matches the current manual loop, and it is a fragile spot if the SDK starts
+          requiring ids to pair calls with responses.
+        </p>
+      </section>
+
+      <section id="storage">
+        <h2>08 — Persistence</h2>
+        <p>Three stores under <code>DATA_DIR</code>, all gitignored:</p>
+        <div class="grid-2">
+          <article class="card">
+            <h3>SQLite <code>research.sqlite</code></h3>
+            <p>
+              One table, <code>documents</code>: <code>id</code>, <code>filename</code>, <code>status</code>,
+              <code>error</code>, <code>created_at</code> (<span class="ref">db.py:5-14</span>).
+              Status values used in code are <code>processing</code>, <code>ready</code>, <code>failed</code>.
+              There is no read API. Connections are opened and closed per call, schema is executed every time,
+              and the writes are synchronous inside async request handlers, so they block the event loop.
+              Concurrent ingests can hit SQLite’s default lock.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Files and Chroma</h3>
+            <p>
+              Originals: <code>uploads/{doc_id}/{safe_filename}</code>.
+              Index: a persistent Chroma client at <code>data/chroma</code>, collection <code>sources</code>,
+              cosine HNSW, vectors supplied by the app. The client and collection are module globals created at import.
+              That is fine for one uvicorn process. Several workers would each open the same on-disk index.
+            </p>
+          </article>
+        </div>
+        <p>
+          Nothing deletes a document. Nothing lists documents. A failed ingest keeps the SQLite row and, if failure
+          happened after <code>add_chunks</code>, would also keep vectors. Today <code>add_chunks</code> is the last
+          fallible step before <code>mark_ready</code>, so a failure inside <code>mark_ready</code> itself is the
+          case that leaves searchable chunks with a <code>failed</code> row.
+        </p>
+      </section>
+
+      <section id="api">
+        <h2>09 — HTTP API and errors</h2>
+        <table>
+          <thead>
+            <tr><th>Route</th><th>Request</th><th>Success</th><th>Failure</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>POST /api/sources</code></td>
+              <td>multipart field <code>files</code>, one or more</td>
+              <td>200 JSON <code>UploadResult</code></td>
+              <td>400 <code>IngestError</code> as plain text. 422 if the body is not valid multipart. 500 otherwise, body is <code>str(exc)</code>.</td>
+            </tr>
+            <tr>
+              <td><code>POST /api/research</code></td>
+              <td>JSON <code>{ "request": "..." }</code></td>
+              <td>200 <code>text/plain</code> stream</td>
+              <td>400 if the trimmed question is empty. Once streaming starts, errors are written into the body.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          All three exception handlers return <code>PlainTextResponse</code> (<span class="ref">main.py:43-57</span>),
+          which matches the frontend: it reads <code>response.text()</code> and throws <code>new Error(text)</code>
+          (<span class="ref">api.ts:15-17</span> and <span class="ref">api.ts:64-66</span>). The 500 handler returns the
+          exception string to the browser. That is convenient in a tech test and too open for anything exposed.
+        </p>
+        <p>There is no <code>GET</code> for sources, no delete, no health check, no request id, no upload size limit, and no rate limit. FastAPI’s default docs stay enabled at <code>/docs</code>.</p>
+      </section>
+
+      <section id="frontend">
+        <h2>10 — Frontend</h2>
+        <p>
+          <span class="ref">frontend/src/main.tsx</span> mounts <code>App</code> in React strict mode.
+          <code>App</code> is one component and three panels: sources, request, streaming response
+          (<span class="ref">App.tsx:105-169</span>). State is local <code>useState</code>. No router, no global store,
+          no markdown library. The dependency list is React only (<span class="ref">frontend/package.json</span>).
+        </p>
+        <ul>
+          <li>API base URL is <code>import.meta.env.VITE_API_BASE_URL</code> or <code>http://localhost:8787</code> (<span class="ref">api.ts:1</span>). It is baked in at Vite build/dev time. The browser calls it directly, so CORS must allow the page origin.</li>
+          <li>Research can be aborted (<span class="ref">App.tsx:63-70</span>). Abort during the request sets “Research request cancelled.” An abort that is not user-initiated is swallowed. Upload cannot be aborted.</li>
+          <li>The selected file list is derived from the <code>FileList</code> on every render (<span class="ref">App.tsx:19-21</span>). After a successful upload the input is not cleared, so the same selection can be submitted again and will be ingested as new documents.</li>
+          <li>The response panel is <code>aria-live="polite"</code> and shows either the accumulated string or a placeholder (<span class="ref">App.tsx:163-167</span>). Markdown syntax is visible as source, which the page copy states on purpose.</li>
+        </ul>
+        <p>
+          <code>vite.config.ts</code> only registers the React plugin. There is no proxy, so the frontend never hides the backend origin. Lint is oxlint; there is no frontend test script.
+        </p>
+      </section>
+
+      <section id="tests">
+        <h2>11 — Tests and quality gates</h2>
+        <p><code>make test</code> is <code>uv run pytest</code> in <code>backend/</code>. <code>make lint</code> is <code>ruff check --fix</code>. <code>make check</code> runs both (<span class="ref">Makefile:3-9</span>). mypy is configured as strict and coverage is a dev dependency (<span class="ref">pyproject.toml:16-22</span> and <span class="ref">pyproject.toml:39-41</span>), but neither is invoked by Make.</p>
+        <table>
+          <thead>
+            <tr><th>Test</th><th>What it locks</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>test_chunk_text_overlaps_and_skips_blank_input</code></td><td>Window starts and the empty-string case.</td></tr>
+            <tr><td><code>test_google_search_tool_follows_the_setting</code></td><td><code>tools()</code> includes or omits Google Search. Constructs new agents, so it needs a key, which conftest provides.</td></tr>
+            <tr><td><code>test_uploaded_file_can_be_searched</code></td><td>Real ingest + search with embeddings stubbed to <code>[1.0, 0.0]</code>. Asserts the filename and chunk index appear. Writes into the temp data dir.</td></tr>
+            <tr><td><code>test_embedding_batches_run_together_and_keep_order</code></td><td>Two batches overlap; vector order matches input order.</td></tr>
+            <tr><td><code>test_several_uploads_are_ingested_together</code></td><td>The HTTP route gathers two uploads and returns both descriptors. Ingest itself is stubbed.</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Not covered: the streaming loop, web-source footer, empty-question 400, invalid UTF-8, SQLite status transitions,
+          the content-hash migration, filename sanitizing, partial multi-file failure, abort, and the entire frontend.
+          The README’s evaluation section (<span class="ref">README.md:100-126</span>) describes recall@k, citation accuracy,
+          and faithfulness. None of that harness exists in the repo.
+        </p>
+      </section>
+
+      <section id="improvements">
+        <h2>12 — Suggestions for improvements</h2>
+        <p>
+          These are changes to behavior that already exists: correctness, reliability, and how the current pieces fit together.
+          New product surface is in the next section.
+        </p>
+
+        <article class="card">
+          <span class="tag high">High</span>
+          <h3>Make multi-file upload consistent</h3>
+          <p>
+            <span class="ref">main.py:63-66</span> uses <code>asyncio.gather</code> without
+            <code>return_exceptions</code>. One bad file fails the response while siblings keep running and may become
+            searchable. Either ingest all files, return per-file success and failure, or treat the batch as a transaction:
+            if any file fails, delete the chunks and rows created by the others before responding.
+            The README already calls the second option out as missing (<span class="ref">README.md:94</span>).
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag high">High</span>
+          <h3>Keep web sources across turns</h3>
+          <p>
+            Hoist <code>web_sources</code> out of the turn loop in <span class="ref">agent.py:144-176</span>, or merge
+            grounding metadata into a request-level list and render the footer once, when the loop returns.
+            Today a turn that both searches documents and uses Google Search throws the links away.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag high">High</span>
+          <h3>Pass distances through and stop citing weak hits</h3>
+          <p>
+            <span class="ref">vector_store.py:56-68</span> drops Chroma distances. The prompt then says to always cite
+            tool results (<span class="ref">agent.py:24-25</span>). A low-similarity neighbor is indistinguishable from
+            a direct match, so the model is pushed to cite it. Return the distance, drop hits under a threshold, and
+            tell the model it may abstain.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag high">High</span>
+          <h3>Align the citation contract</h3>
+          <p>
+            Tool text is <code>[filename chunk N]</code>. The required citation is <code>[filename:chunk_index]</code>.
+            Emit the citation token in the tool result itself, and include <code>doc_id</code> so later checks do not
+            depend on filenames, which are not unique.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Stop blocking the event loop on SQLite and Chroma</h3>
+          <p>
+            <code>insert_document</code>, <code>mark_ready</code>, <code>add_chunks</code>, and
+            <code>collection.query</code> are synchronous and are called from async handlers. Under overlapping
+            uploads that stalls embedding concurrency and can trip SQLite’s writer lock. Run those calls in
+            <code>asyncio.to_thread</code>, use a single connection with WAL, or move ingest onto a worker.
+            Also open the connection as a context manager instead of <code>try/finally: close</code> repeated in
+            <span class="ref">db.py:39-50</span> and <span class="ref">db.py:62-70</span>.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Bound Gemini calls</h3>
+          <p>
+            There is no timeout, no retry, and no backoff around <code>embed_content</code> or
+            <code>generate_content_stream</code>. A hung embed holds an <code>EMBED_WORKERS</code> slot until the
+            client gives up. Add a per-call timeout and limited retries for transient failures. Cap how many
+            embed tasks are created: <span class="ref">agent.py:72-73</span> schedules every batch at once and only
+            then waits on the semaphore.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Tighten the prompt so corpus and web do not contradict each other</h3>
+          <p>
+            State an order: search uploads first; if the chunks do not support the claim, either abstain or use
+            Google Search; never invent an upload citation for a web fact. The current concatenation
+            (<span class="ref">agent.py:136</span>) says both “if nothing relevant was uploaded, say so” and
+            “use Google Search for facts that are not in the files.”
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Do not return raw exception text on HTTP 500</h3>
+          <p>
+            <span class="ref">main.py:55-57</span> sends <code>str(exc)</code> to the client. Log the exception
+            server-side and return a stable message. The in-stream <code>Research failed: {exc}</code> line
+            (<span class="ref">agent.py:132</span>) has the same leak once the stream has started.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Fix chunking where whitespace splitting is the wrong unit</h3>
+          <p>
+            <span class="ref">chunks.py:11</span> splits on whitespace. That works for English prose and splits
+            identifiers, URLs, and CJK text poorly. It also cuts in the middle of sentences, which hurts both
+            retrieval and citation. Prefer paragraph or sentence windows with the word count as a max size.
+            The overlap math can stay; the test in <span class="ref">test_core.py:7-13</span> would need updating
+            if the splitter changes.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag med">Medium</span>
+          <h3>Run tool calls concurrently, and copy call ids</h3>
+          <p>
+            <span class="ref">agent.py:179</span> awaits each <code>_tool_result</code> one after another.
+            Independent queries can embed and search together under the existing semaphore.
+            Include the function-call id on the response part so the manual loop stays valid if the SDK requires pairing.
+          </p>
+        </article>
+
+        <article class="card">
+          <span class="tag low">Low</span>
+          <h3>Smaller cleanliness items</h3>
+          <ul>
+            <li>Remove unused <code>docling</code> until PDF ingest exists, or the dependency installs a large unused stack in every image (<span class="ref">pyproject.toml:8</span>, <span class="ref">backend/Dockerfile:17-18</span>).</li>
+            <li>Wire <code>mypy</code> and <code>coverage</code> into <code>make check</code>. Strict mypy is configured and never run.</li>
+            <li>Replace the destructive <code>content_hash</code> drop (<span class="ref">db.py:23-34</span>) with a forward migration once dedup is real. Running that block today deletes the column on every connect if it exists.</li>
+            <li>Add <code>Cache-Control: no-cache</code> and <code>X-Accel-Buffering: no</code> on the research stream so proxies do not hold tokens.</li>
+            <li>Clear the file input after a successful upload (<span class="ref">App.tsx:90-93</span>) so a second click is an intentional re-ingest.</li>
+            <li>CORS is a single origin (<span class="ref">main.py:16</span>). Docker works only because the browser uses <code>localhost:5173</code>. A different host or port fails quietly in the browser.</li>
+            <li>Move <code>ResearchAgent()</code> and <code>open_collection()</code> behind a FastAPI lifespan so tests and <code>--help</code>-style imports do not need a live key and a writable data dir.</li>
+            <li>Use <code>zip(..., strict=True)</code> in <span class="ref">vector_store.py:64</span> so a mismatched Chroma response fails loudly.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section id="next">
+        <h2>13 — What can still be implemented</h2>
+        <p>
+          The README table at <span class="ref">README.md:80-94</span> is the project’s own backlog.
+          The items below include that list and the gaps that show up once you follow a request through the code.
+          None of these have a route, a UI, or a test today.
+        </p>
+
+        <div class="grid-2">
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Content-hash dedup</h3>
+            <p>
+              The TODO is <span class="ref">agent.py:98</span>. Hash the bytes before embed, store the hash on
+              <code>documents</code>, and return the existing row when the hash matches. Skip Gemini and Chroma.
+              Decide what “same content, different filename” should do. The old column-dropping migration has to be replaced, not reused.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Background upload queue</h3>
+            <p>
+              Ingest currently lives inside the HTTP request, including every embedding batch. A queue (or even
+              <code>BackgroundTasks</code> plus polling) would accept the file, return a document id, and let the
+              UI show <code>processing</code>. SQLite already has that status and nowhere to read it.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>PDF and Office via docling</h3>
+            <p>
+              The library is installed and unused. <code>decode_text</code> is the only parser
+              (<span class="ref">vector_store.py:71-75</span>), and the file input is <code>accept="text/*"</code>.
+              A parser step in <code>ingest_file</code>, chosen by content type, is the seam. Keep the rest of the pipeline on extracted text.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Reranking</h3>
+            <p>
+              Retrieve a wider set than <code>TOP_K</code>, then rerank with a cross-encoder or a cheap model call
+              before the string is handed to the agent. This belongs in <code>search_chunks_by_vector</code> or just above it, after distances exist.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Hybrid retrieval and filters</h3>
+            <p>
+              Metadata already stores <code>doc_id</code> and <code>filename</code> (<span class="ref">vector_store.py:42-49</span>)
+              but <code>collection.query</code> never filters. Add an optional filename or document filter on the tool,
+              plus a lexical index (BM25 or SQLite FTS) merged with the vector hits. Useful when the user names a file.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Observability</h3>
+            <p>
+              No logs, no request id, no token counts. The README suggests structured logs and Langfuse or OpenTelemetry
+              around embed latency, generation latency, and cost. The natural spans are <code>ingest_file</code>,
+              <code>_embed_batch</code>, each agent turn, and <code>search_documents</code>.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Evaluation harness</h3>
+            <p>
+              <span class="ref">README.md:100-126</span> already specifies the split: recall@k for retrieval,
+              citation accuracy and faithfulness for generation, abstention on questions that are not in the corpus.
+              A golden file of <code>(question, expected chunk ids)</code> can run against the fake-embedder style
+              used in tests, with a separate recorded-Gemini job for drift. <code>make test</code> does not do this.
+            </p>
+          </article>
+          <article class="card">
+            <span class="tag new">Listed in the README</span>
+            <h3>Safety and operations</h3>
+            <p>
+              Rate limits, a max upload size, authentication, and all-or-nothing multi-file behavior.
+              Also missing, and cheap: a body size limit on <code>UploadFile</code>, a max question length, and
+              refusing to start the stream for an empty corpus with a clear message instead of a model round-trip.
+            </p>
+          </article>
+        </div>
+
+        <h3>Visible in the product, not in the README table</h3>
+        <article class="card">
+          <span class="tag new">API + UI</span>
+          <h3>List, inspect, and delete sources</h3>
+          <p>
+            The UI forgets uploads on refresh. SQLite has every row and nobody selects from it.
+            A <code>GET /api/sources</code> can return id, filename, status, error, created time, and chunk count.
+            <code>DELETE /api/sources/{id}</code> should remove the row, the upload directory, and the Chroma ids
+            <code>{doc_id}:*</code>. Without delete, the only fix for a bad or duplicate file is to wipe <code>data/</code>.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">Agent</span>
+          <h3>Conversation memory</h3>
+          <p>
+            Each research call starts a new <code>contents</code> list with one user message
+            (<span class="ref">agent.py:135</span>). “Tell me more about the second point” has no prior answer to refer to.
+            A session id plus stored turns would make follow-ups work. Keep retrieval on every new factual question
+            so memory does not replace citations.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">Agent</span>
+          <h3>Citation checking before the stream ends</h3>
+          <p>
+            After the final turn, parse <code>[filename:chunk_index]</code> tokens, confirm the pair exists in Chroma,
+            and optionally verify a quoted span. Strip or flag citations that do not match. This is the enforcement
+            version of the instruction at <span class="ref">agent.py:23-25</span>, which is currently honor-system only.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">UI</span>
+          <h3>Render markdown, and show sources as they are used</h3>
+          <p>
+            The response panel prints the raw stream (<span class="ref">App.tsx:165-167</span>). A sanitizing markdown
+            renderer would match what the prompt asks the model to write. A side list of retrieved chunks, filled when
+            the backend emits a small structured event before the prose, would make citations checkable.
+            That implies a real stream protocol (SSE or newline-delimited JSON) instead of undifferentiated
+            <code>text/plain</code>.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">API</span>
+          <h3>Health and readiness</h3>
+          <p>
+            <code>compose.yml</code> uses <code>depends_on</code> with no healthcheck, so the frontend can start
+            before the API is listening. <code>GET /health</code> can report process up; <code>GET /ready</code> can
+            check that the data directory, SQLite, and Chroma open. The frontend container’s command also runs
+            <code>npm install</code> on every start (<span class="ref">compose.yml:28</span>) even though the image
+            already installed dependencies.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">Retrieval</span>
+          <h3>Per-document questions and “what did I upload?”</h3>
+          <p>
+            The agent cannot list filenames unless they happen to be in the top-k chunks. A second tool,
+            <code>list_documents</code>, reading SQLite, would let the model answer inventory questions without
+            pretending a vector search is a catalog.
+          </p>
+        </article>
+        <article class="card">
+          <span class="tag new">Tests</span>
+          <h3>The agent loop itself</h3>
+          <p>
+            Stub <code>generate_content_stream</code> to yield a function call and then a text answer. Assert the
+            tool result is appended, text is streamed, the web footer appears, the footer survives a mixed turn,
+            the fifth turn yields the give-up sentence, and an empty <code>request</code> is HTTP 400.
+            Those are the branches in <span class="ref">agent.py:144-182</span> and <span class="ref">main.py:73-75</span>,
+            and they are currently untested.
+          </p>
+        </article>
+
+        <div class="callout ok">
+          <strong>A sensible order if this were the next sprint</strong>
+          Fix multi-file failure handling and the dropped web-source footer first — both are wrong with the code as it stands.
+          Then add list/delete so the corpus is operable, content-hash dedup so re-uploads stop polluting search,
+          and a retrieval eval so chunk size and <code>TOP_K</code> can be changed with evidence.
+          PDF parsing, reranking, and a job queue are larger and sit cleanly on top of that.
+        </div>
+      </section>
+
+      <footer>
+        Generated as a reading guide for this repository. Line references match the source as of this document.
+        Open it in a browser from the repo root: <code>codebase-guide.html</code>.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

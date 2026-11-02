@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     data_dir: Path = Path("data")
     top_k: int = Field(default=5, ge=1, le=100)
     google_search_enabled: bool = True
+    allowed_origins: str = "http://localhost:5173"
+    allowed_file_types: str = ""
 
 
 settings = Settings()

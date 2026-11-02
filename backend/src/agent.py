@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from collections.abc import AsyncIterator, Sequence
 
@@ -13,6 +14,8 @@ from vector_store import IngestError, add_chunks, decode_text, safe_filename, sa
 MAX_TURNS = 5
 EMBED_BATCH = 100
 EMBED_WORKERS = 4
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 You are a senior research assistant.
@@ -74,10 +77,20 @@ class ResearchAgent:
         return [vector for batch_vectors in embedded for vector in batch_vectors]
 
     async def _embed_batch(self, batch: list[str], task_type: str) -> list[Sequence[float]]:
+
         async with self._embed_slots:
+            content_batch = [
+                types.Content(
+                    parts=[
+                        types.Part(text=i),
+                    ]
+                )
+                for i in batch
+            ]
+
             response = await self.client.aio.models.embed_content(
                 model=settings.gemini_embedding_model,
-                contents=batch,  # type: ignore[arg-type]
+                contents=content_batch,  # type: ignore[arg-type]
                 config=types.EmbedContentConfig(task_type=task_type),
             )
         return self._read_embeddings(response, len(batch))
@@ -85,6 +98,7 @@ class ResearchAgent:
     def _read_embeddings(self, response: types.EmbedContentResponse, expected: int) -> list[Sequence[float]]:
         embeddings = response.embeddings or []
         if len(embeddings) != expected:
+            logger.error(f"embedding response did not match the input batch: {len(embeddings)} != {expected}")
             raise RuntimeError("embedding response did not match the input batch")
         vectors: list[Sequence[float]] = []
         for embedding in embeddings:
@@ -133,9 +147,9 @@ class ResearchAgent:
 
     async def _answer(self, question: str) -> AsyncIterator[str]:
         contents: list[types.Content] = [types.Content(role="user", parts=[types.Part.from_text(text=question)])]
-        prompt = SYSTEM_PROMPT + (WEB_SEARCH_PROMPT if settings.google_search_enabled else "")
+        system_prompt = SYSTEM_PROMPT + (WEB_SEARCH_PROMPT if settings.google_search_enabled else "")
         config = types.GenerateContentConfig(
-            system_instruction=prompt,
+            system_instruction=system_prompt,
             tools=self.tools(),
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             tool_config=self._tool_config(),
@@ -182,6 +196,7 @@ class ResearchAgent:
         yield "I couldn't finish that research request."
 
     async def _tool_result(self, call: types.FunctionCall) -> types.Part:
+        logger.info(f"Tool result: {call}")
         return types.Part.from_function_response(
             name="search_documents",
             response={"result": await self.search_documents(self._query(call))},
